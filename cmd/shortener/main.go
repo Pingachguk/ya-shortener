@@ -8,44 +8,45 @@ import (
 
 var urls map[string]string
 
-func mainHandler(w http.ResponseWriter, r *http.Request) {
+func router(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		_, id, _ := strings.Cut(r.RequestURI, "/")
-		url := getShort(id)
-		if len(url) == 0 {
-			http.NotFound(w, r)
-		} else {
-			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-		}
+		getShortHandler(w, r)
 	case http.MethodPost:
-		b := make([]byte, r.ContentLength)
-		r.Body.Read(b)
-		short := createShort(string(b))
-		res := fmt.Sprintf("http://%s/%s", r.Host, short)
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(res))
+		createShortHandler(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func getShort(id string) string {
-	return urls[id]
+func getShortHandler(w http.ResponseWriter, r *http.Request) {
+	_, id, _ := strings.Cut(r.RequestURI, "/")
+	url := urls[id]
+	if len(url) == 0 {
+		http.NotFound(w, r)
+	} else {
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	}
 }
 
-func createShort(url string) string {
-	res := fmt.Sprint(len(urls) + 1)
-	urls[res] = url
+func createShortHandler(w http.ResponseWriter, r *http.Request) {
+	b := make([]byte, r.ContentLength)
+	r.Body.Read(b)
+	url := string(b)
 
-	return res
+	short := fmt.Sprint(len(urls) + 1)
+	urls[short] = url
+	res := fmt.Sprintf("http://%s/%s", r.Host, short)
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(res))
 }
 
 func main() {
 	urls = make(map[string]string)
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", mainHandler)
+	mux.HandleFunc("/", router)
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		panic(err)
