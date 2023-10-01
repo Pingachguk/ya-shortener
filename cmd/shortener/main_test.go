@@ -34,17 +34,17 @@ func TestGetShortHandler(t *testing.T) {
 			},
 		},
 	}
-	urls := UrlStorage{
+	urls = URLStorage{
 		"qwerty": "https://praktikum.yandex.ru",
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/%s", test.data), nil)
 			w := httptest.NewRecorder()
-			handler := getShortHandler(urls)
-			handler(w, r)
+			getShortHandler(w, r)
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.statusCode, res.StatusCode)
 		})
@@ -75,15 +75,15 @@ func TestCreateShortHandler(t *testing.T) {
 			},
 		},
 	}
-	urls := make(UrlStorage)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(test.data)))
 			w := httptest.NewRecorder()
-			handler := createShortHandler(urls)
-			handler(w, r)
+			createShortHandler(w, r)
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.statusCode, res.StatusCode)
 		})
