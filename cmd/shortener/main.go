@@ -3,27 +3,18 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type URLStorage map[string]string
 
 var urls URLStorage
 
-func router(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		getShortHandler(w, r)
-	case http.MethodPost:
-		createShortHandler(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
-}
-
 func getShortHandler(w http.ResponseWriter, r *http.Request) {
-	_, id, _ := strings.Cut(r.RequestURI, "/")
+	id := chi.URLParam(r, "url")
 	url := urls[id]
+
 	if len(url) == 0 {
 		http.NotFound(w, r)
 	} else {
@@ -36,6 +27,7 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 		urls = make(URLStorage)
 	}
 
+	fmt.Println(r.Body)
 	b := make([]byte, r.ContentLength)
 	r.Body.Read(b)
 	url := string(b)
@@ -54,11 +46,11 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
+	router.Get("/{url}", getShortHandler)
+	router.Post("/", createShortHandler)
 
-	mux.HandleFunc("/", router)
-
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", router); err != nil {
 		panic(err)
 	}
 }
