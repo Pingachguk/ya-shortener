@@ -12,12 +12,13 @@ type URLStorage map[string]string
 var urls URLStorage
 
 func getShortHandler(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "url")
+	id := chi.URLParam(r, "id")
 	url := urls[id]
 
 	if len(url) == 0 {
 		http.NotFound(w, r)
 	} else {
+		w.WriteHeader(http.StatusTemporaryRedirect)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
@@ -27,7 +28,6 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 		urls = make(URLStorage)
 	}
 
-	fmt.Println(r.Body)
 	b := make([]byte, r.ContentLength)
 	r.Body.Read(b)
 	url := string(b)
@@ -45,12 +45,16 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(res))
 }
 
-func main() {
+func GetRouter() chi.Router {
 	router := chi.NewRouter()
-	router.Get("/{url}", getShortHandler)
+	router.Get("/{id}", getShortHandler)
 	router.Post("/", createShortHandler)
 
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	return router
+}
+
+func main() {
+	if err := http.ListenAndServe(":8080", GetRouter()); err != nil {
 		panic(err)
 	}
 }

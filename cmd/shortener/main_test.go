@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetShortHandler(t *testing.T) {
@@ -37,13 +38,13 @@ func TestGetShortHandler(t *testing.T) {
 	urls = URLStorage{
 		"qwerty": "https://praktikum.yandex.ru",
 	}
+
+	srv := httptest.NewServer(GetRouter())
+	defer srv.Close()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/%s", test.data), nil)
-			w := httptest.NewRecorder()
-			getShortHandler(w, r)
-
-			res := w.Result()
+			res, err := http.Get(srv.URL + fmt.Sprintf("/%s", test.data))
+			require.NoError(t, err)
 			defer res.Body.Close()
 
 			assert.Equal(t, test.want.statusCode, res.StatusCode)
