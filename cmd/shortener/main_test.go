@@ -41,9 +41,14 @@ func TestGetShortHandler(t *testing.T) {
 
 	srv := httptest.NewServer(GetRouter())
 	defer srv.Close()
+
+	client := srv.Client()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, err := http.Get(srv.URL + fmt.Sprintf("/%s", test.data))
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			}
+			res, err := client.Get(srv.URL + fmt.Sprintf("/%s", test.data))
 			require.NoError(t, err)
 			defer res.Body.Close()
 

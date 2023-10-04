@@ -18,7 +18,6 @@ func getShortHandler(w http.ResponseWriter, r *http.Request) {
 	if len(url) == 0 {
 		http.NotFound(w, r)
 	} else {
-		w.WriteHeader(http.StatusTemporaryRedirect)
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	}
 }
