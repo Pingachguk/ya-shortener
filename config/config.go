@@ -40,6 +40,6 @@ var (
 	BaseAddr = defaultAddr
 )
 
-func init() {
+func InitConfig() {
 	parseFlags()
 }

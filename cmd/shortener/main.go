@@ -54,6 +54,7 @@ func GetRouter() chi.Router {
 }
 
 func main() {
+	config.InitConfig()
 	addr := config.AppAddr.String()
 
 	fmt.Printf("[*] Application address: %s\n", addr)
