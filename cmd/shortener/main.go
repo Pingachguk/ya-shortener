@@ -12,7 +12,8 @@ type URLStorage map[string]string
 
 var urls URLStorage
 
-func getShortHandler(w http.ResponseWriter, r *http.Request) {
+func tryRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(123)
 	id := chi.URLParam(r, "id")
 	url := urls[id]
 
@@ -39,7 +40,7 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	short := fmt.Sprint(len(urls) + 1)
 	urls[short] = url
-	res := fmt.Sprintf("%s/%s", config.BaseAddr.String(), short)
+	res := fmt.Sprintf("http://%s:%s/%s", cfg.Host, cfg.Port, short)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(res))
@@ -47,18 +48,19 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetRouter() chi.Router {
 	router := chi.NewRouter()
-	router.Get("/{id}", getShortHandler)
+	router.Get("/{id}", tryRedirectHandler)
 	router.Post("/", createShortHandler)
 
 	return router
 }
 
+var cfg config.Config
+
 func main() {
-	config.InitConfig()
-	addr := config.AppAddr.String()
+	cfg = config.New()
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 
 	fmt.Printf("[*] Application address: %s\n", addr)
-	fmt.Printf("[*] Application address: %s\n", config.BaseAddr.String())
 
 	if err := http.ListenAndServe(addr, GetRouter()); err != nil {
 		panic(err)

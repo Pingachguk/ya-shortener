@@ -4,7 +4,10 @@ go 1.19
 
 require github.com/stretchr/testify v1.8.4
 
-require golang.org/x/net v0.15.0 // indirect
+require (
+	github.com/caarlos0/env v3.5.0+incompatible // indirect
+	golang.org/x/net v0.15.0 // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
