@@ -6,14 +6,14 @@ import (
 )
 
 func parseFlags(cfg *Config) {
-	flag.StringVar(&cfg.Host, "h", "127.0.0.1", "Host for server")
-	flag.StringVar(&cfg.Port, "p", "8080", "Port for server")
+	flag.StringVar(&cfg.App, "a", "localhost:8080", "App address for server")
+	flag.StringVar(&cfg.Base, "b", "localhost:8080", "Base address for short URL")
 	flag.Parse()
 
-	if host := os.Getenv("HOST"); host != "" {
-		cfg.Host = host
+	if app := os.Getenv("APP"); app != "" {
+		cfg.App = app
 	}
-	if port := os.Getenv("PORT"); port != "" {
-		cfg.Port = port
+	if base := os.Getenv("BASE"); base != "" {
+		cfg.Base = base
 	}
 }

@@ -40,7 +40,7 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	short := fmt.Sprint(len(urls) + 1)
 	urls[short] = url
-	res := fmt.Sprintf("http://%s:%s/%s", cfg.Host, cfg.Port, short)
+	res := fmt.Sprintf("%s/%s", cfg.Base, short)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(res))
@@ -58,11 +58,11 @@ var cfg config.Config
 
 func main() {
 	cfg = config.New()
-	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 
-	fmt.Printf("[*] Application address: %s\n", addr)
+	fmt.Printf("[*] Application address: %s\n", cfg.App)
+	fmt.Printf("[*] Base address: %s\n", cfg.Base)
 
-	if err := http.ListenAndServe(addr, GetRouter()); err != nil {
+	if err := http.ListenAndServe(cfg.App, GetRouter()); err != nil {
 		panic(err)
 	}
 }
