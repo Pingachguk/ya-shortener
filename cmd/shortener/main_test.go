@@ -35,7 +35,7 @@ func TestGetShortHandler(t *testing.T) {
 			},
 		},
 	}
-	urls = URLStorage{
+	urls = map[string]string{
 		"qwerty": "https://praktikum.yandex.ru",
 	}
 

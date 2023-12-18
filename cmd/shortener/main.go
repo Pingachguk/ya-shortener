@@ -2,43 +2,48 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pingachguk/ya-shortener/config"
+	"github.com/teris-io/shortid"
 )
 
-type URLStorage map[string]string
-
-var urls URLStorage
+var urls map[string]string
 
 func tryRedirectHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(123)
 	id := chi.URLParam(r, "id")
-	url := urls[id]
+	url, ok := urls[id]
 
-	if len(url) == 0 {
-		http.NotFound(w, r)
-	} else {
+	if ok {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	} else {
+		http.NotFound(w, r)
 	}
 }
 
 func createShortHandler(w http.ResponseWriter, r *http.Request) {
 	if urls == nil {
-		urls = make(URLStorage)
+		urls = make(map[string]string)
 	}
 
-	b := make([]byte, r.ContentLength)
-	r.Body.Read(b)
-	url := string(b)
+	body, err := io.ReadAll(r.Body)
 
-	if len(url) == 0 {
-		http.Error(w, "empty body", http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	} else if len(body) == 0 {
+		http.Error(w, "Bad reuqest data: empty body", http.StatusBadRequest)
 		return
 	}
 
-	short := fmt.Sprint(len(urls) + 1)
+	url := string(body)
+	short, err := shortid.GetDefault().Generate()
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
 	urls[short] = url
 	res := fmt.Sprintf("%s/%s", cfg.Base, short)
 

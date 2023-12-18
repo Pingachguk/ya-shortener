@@ -6,6 +6,8 @@ require github.com/stretchr/testify v1.8.4
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible // indirect
+	github.com/google/uuid v1.5.0 // indirect
+	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569 // indirect
 	golang.org/x/net v0.15.0 // indirect
 )
 
