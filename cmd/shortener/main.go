@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pingachguk/ya-shortener/config"
+	"github.com/pingachguk/ya-shortener/internal/logger"
+	"github.com/rs/zerolog/log"
 	"github.com/teris-io/shortid"
 )
 
@@ -53,6 +55,9 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetRouter() chi.Router {
 	router := chi.NewRouter()
+	
+	router.Use(logger.LogMiddleware)
+
 	router.Get("/{id}", tryRedirectHandler)
 	router.Post("/", createShortHandler)
 
@@ -64,8 +69,8 @@ var cfg config.Config
 func main() {
 	cfg = config.New()
 
-	fmt.Printf("[*] Application address: %s\n", cfg.App)
-	fmt.Printf("[*] Base address: %s\n", cfg.Base)
+	log.Info().Msgf("[*] Application address: %s", cfg.App)
+	log.Info().Msgf("[*] Base address: %s", cfg.Base)
 
 	if err := http.ListenAndServe(cfg.App, GetRouter()); err != nil {
 		panic(err)
