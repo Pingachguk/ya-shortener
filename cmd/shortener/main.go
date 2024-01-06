@@ -55,7 +55,7 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetRouter() chi.Router {
 	router := chi.NewRouter()
-	
+
 	router.Use(logger.LogMiddleware)
 
 	router.Get("/{id}", tryRedirectHandler)
