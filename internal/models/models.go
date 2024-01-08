@@ -6,6 +6,11 @@ type (
 	}
 
 	Response struct {
-		Result string `json:"url"`
+		Result string `json:"result"`
+	}
+
+	BadResponse struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
 	}
 )

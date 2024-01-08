@@ -56,23 +56,31 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.Request
 
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		errorResponse(w, "Bad Content-Type: need application/json", http.StatusNotAcceptable)
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
 	if err == io.EOF {
-		http.Error(w, "Bad reuqest data: empty body", http.StatusBadRequest)
+		errorResponse(w, "Bad reuqest data: empty body", http.StatusBadRequest)
 		return
 	} else if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
 	}
 
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
 	}
+
 	urls[short] = req.URL
 	res := models.Response{
 		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
@@ -84,6 +92,22 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
+	}
+}
+
+func errorResponse(w http.ResponseWriter, message string, statusCode int) {
+	w.WriteHeader(statusCode)
+
+	encoder := json.NewEncoder(w)
+
+	res := models.BadResponse{
+		Code:    statusCode,
+		Message: message,
+	}
+
+	if err := encoder.Encode(res); err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
 	}
 }
 
