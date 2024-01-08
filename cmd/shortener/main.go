@@ -85,9 +85,6 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("")
 		return
 	}
-
-	ld, _ := json.Marshal(res)
-	log.Info().RawJSON("data", ld).Msgf("")
 }
 
 func GetRouter() chi.Router {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -84,16 +83,20 @@ func TestCreateShortHandler(t *testing.T) {
 		},
 	}
 
+	srv := createTestServer()
+	defer srv.Close()
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(test.data)))
-			w := httptest.NewRecorder()
-			createShortHandler(w, r)
+			req := resty.New().R()
+			req.Method = http.MethodPost
+			req.URL = fmt.Sprintf("%s%s", srv.URL, "/")
+			req.SetBody(test.data)
 
-			res := w.Result()
-			defer res.Body.Close()
+			res, err := req.Send()
 
-			assert.Equal(t, test.want.statusCode, res.StatusCode)
+			assert.NoError(t, err, "Err HTTP Request")
+			assert.Equal(t, test.want.statusCode, res.StatusCode())
 		})
 	}
 }

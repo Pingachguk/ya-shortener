@@ -8,5 +8,7 @@ type config struct {
 var Config config
 
 func InitConfig() {
-	parseFlags(&Config)
+	if Config == (config{}) {
+		parseFlags(&Config)
+	}
 }
