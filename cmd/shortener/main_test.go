@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
+	"github.com/pingachguk/ya-shortener/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +41,7 @@ func TestGetShortHandler(t *testing.T) {
 		"qwerty": "https://praktikum.yandex.ru",
 	}
 
-	srv := httptest.NewServer(GetRouter())
+	srv := createTestServer()
 	defer srv.Close()
 
 	client := srv.Client()
@@ -94,4 +96,54 @@ func TestCreateShortHandler(t *testing.T) {
 			assert.Equal(t, test.want.statusCode, res.StatusCode)
 		})
 	}
+}
+
+func TestApiCreateShortHandler(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+	tests := []struct {
+		name string
+		data string
+		want want
+	}{
+		{
+			name: "#1 Created",
+			data: `{"url": "https://praktikum.yandex.ru"}`,
+			want: want{
+				statusCode: http.StatusCreated,
+			},
+		},
+		{
+			name: "#2 Bad Request",
+			data: "",
+			want: want{
+				statusCode: http.StatusBadRequest,
+			},
+		},
+	}
+
+	srv := createTestServer()
+	defer srv.Close()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := resty.New().R()
+			req.Method = http.MethodPost
+			req.URL = fmt.Sprintf("%s%s", srv.URL, "/api/shorten")
+			req.SetHeader("Content-Type", "application/json")
+			req.SetBody(test.data)
+
+			res, err := req.Send()
+			assert.NoError(t, err, "Err HTTP Request")
+			assert.Equal(t, test.want.statusCode, res.StatusCode())
+		})
+	}
+}
+
+func createTestServer() *httptest.Server {
+	config.InitConfig()
+	srv := httptest.NewServer(GetRouter())
+
+	return srv
 }

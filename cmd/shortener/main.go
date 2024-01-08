@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/pingachguk/ya-shortener/config"
 	"github.com/pingachguk/ya-shortener/internal/logger"
+	"github.com/pingachguk/ya-shortener/internal/models"
 	"github.com/rs/zerolog/log"
 	"github.com/teris-io/shortid"
 )
@@ -26,14 +28,11 @@ func tryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createShortHandler(w http.ResponseWriter, r *http.Request) {
-	if urls == nil {
-		urls = make(map[string]string)
-	}
-
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
 		return
 	} else if len(body) == 0 {
 		http.Error(w, "Bad reuqest data: empty body", http.StatusBadRequest)
@@ -44,19 +43,65 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
 		return
 	}
 	urls[short] = url
-	res := fmt.Sprintf("%s/%s", cfg.Base, short)
+	res := fmt.Sprintf("%s/%s", config.Config.Base, short)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(res))
 }
 
+func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.Request
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&req)
+	if err == io.EOF {
+		http.Error(w, "Bad reuqest data: empty body", http.StatusBadRequest)
+		return
+	} else if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+
+	short, err := shortid.GetDefault().Generate()
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+	urls[short] = req.Url
+	res := models.Response{
+		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(res); err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+
+	ld, _ := json.Marshal(res)
+	log.Info().RawJSON("data", ld).Msgf("")
+}
+
 func GetRouter() chi.Router {
+	if urls == nil {
+		urls = make(map[string]string)
+	}
+
 	router := chi.NewRouter()
 
 	router.Use(logger.LogMiddleware)
+
+	router.Route("/api", func(r chi.Router) {
+		r.Post("/shorten", apiCreateShortHandler)
+	})
 
 	router.Get("/{id}", tryRedirectHandler)
 	router.Post("/", createShortHandler)
@@ -64,15 +109,13 @@ func GetRouter() chi.Router {
 	return router
 }
 
-var cfg config.Config
-
 func main() {
-	cfg = config.New()
+	config.InitConfig()
 
-	log.Info().Msgf("[*] Application address: %s", cfg.App)
-	log.Info().Msgf("[*] Base address: %s", cfg.Base)
+	log.Info().Msgf("[*] Application address: %s", config.Config.Base)
+	log.Info().Msgf("[*] Base address: %s", config.Config.Base)
 
-	if err := http.ListenAndServe(cfg.App, GetRouter()); err != nil {
+	if err := http.ListenAndServe(config.Config.App, GetRouter()); err != nil {
 		panic(err)
 	}
 }
