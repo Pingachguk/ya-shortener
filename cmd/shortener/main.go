@@ -73,7 +73,7 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("")
 		return
 	}
-	urls[short] = req.Url
+	urls[short] = req.URL
 	res := models.Response{
 		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
 	}
