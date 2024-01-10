@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -95,7 +97,7 @@ func TestCreateShortHandler(t *testing.T) {
 
 			res, err := req.Send()
 
-			assert.NoError(t, err, "Err HTTP Request")
+			require.NoError(t, err, "Error HTTP Request")
 			assert.Equal(t, test.want.statusCode, res.StatusCode())
 		})
 	}
@@ -138,10 +140,55 @@ func TestApiCreateShortHandler(t *testing.T) {
 			req.SetBody(test.data)
 
 			res, err := req.Send()
-			assert.NoError(t, err, "Err HTTP Request")
+			require.NoError(t, err, "Error HTTP Request")
 			assert.Equal(t, test.want.statusCode, res.StatusCode())
 		})
 	}
+}
+
+func TestCompress(t *testing.T) {
+	requestBody := `{"url": "https://praktikum.yandex.ru"}`
+
+	srv := createTestServer()
+	defer srv.Close()
+
+	t.Run("Send data compressed", func(t *testing.T) {
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = fmt.Sprintf("%s%s", srv.URL, "/api/shorten")
+		req.SetHeader("Content-Encoding", "gzip")
+		req.SetHeader("Content-Type", "application/json")
+
+		buf := bytes.NewBuffer(nil)
+		zw := gzip.NewWriter(buf)
+		_, err := zw.Write([]byte(requestBody))
+		require.NoError(t, err)
+		err = zw.Close()
+		require.NoError(t, err)
+
+		req.SetBody(buf)
+
+		res, err := req.Send()
+
+		require.NoError(t, err, "Error HTTP Request")
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+	})
+
+	t.Run("Decompress data", func(t *testing.T) {
+		req := resty.New().R()
+		req.Method = http.MethodPost
+		req.URL = fmt.Sprintf("%s%s", srv.URL, "/api/shorten")
+		req.SetHeader("Accept-Encoding", "gzip")
+		req.SetHeader("Content-Type", "application/json")
+		req.SetBody(requestBody)
+
+		res, err := req.Send()
+
+		require.NoError(t, err, "Error HTTP Request")
+		assert.Equal(t, http.StatusCreated, res.StatusCode())
+
+		fmt.Println(string(res.Body()))
+	})
 }
 
 func createTestServer() *httptest.Server {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pingachguk/ya-shortener/config"
+	"github.com/pingachguk/ya-shortener/internal/compresser"
 	"github.com/pingachguk/ya-shortener/internal/logger"
 	"github.com/pingachguk/ya-shortener/internal/models"
 	"github.com/rs/zerolog/log"
@@ -118,7 +119,10 @@ func GetRouter() chi.Router {
 
 	router := chi.NewRouter()
 
-	router.Use(logger.LogMiddleware)
+	router.Use(
+		compresser.CompressMiddleware,
+		logger.LogMiddleware,
+	)
 
 	router.Route("/api", func(r chi.Router) {
 		r.Post("/shorten", apiCreateShortHandler)
