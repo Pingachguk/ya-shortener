@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -185,9 +186,11 @@ func TestCompress(t *testing.T) {
 		res, err := req.Send()
 
 		require.NoError(t, err, "Error HTTP Request")
-		assert.Equal(t, http.StatusCreated, res.StatusCode())
 
-		fmt.Println(string(res.Body()))
+		assert.Equal(t, http.StatusCreated, res.StatusCode(), "Неожиданный кож ответа")
+		contentEncoding := res.Header().Get("Content-Encoding")
+		hasGzip := strings.Contains(contentEncoding, "gzip")
+		assert.True(t, hasGzip, "Заголовок Content-Encoding не содержит значение gzip")
 	})
 }
 
