@@ -2,10 +2,10 @@ package models
 
 import "encoding/json"
 
-func NewShorten(shortUrl string, originalUrl string) *Shorten {
+func NewShorten(shortURL string, originalURL string) *Shorten {
 	return &Shorten{
-		ShortUrl:    shortUrl,
-		OriginalUrl: originalUrl,
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
 	}
 }
 

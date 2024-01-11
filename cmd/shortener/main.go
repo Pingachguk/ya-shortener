@@ -21,7 +21,7 @@ func tryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	shorten := storage.GetStorage().GetByShort(short)
 
 	if shorten != nil {
-		http.Redirect(w, r, shorten.OriginalUrl, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, shorten.OriginalURL, http.StatusTemporaryRedirect)
 	} else {
 		http.NotFound(w, r)
 	}
