@@ -11,7 +11,6 @@ import (
 	"github.com/pingachguk/ya-shortener/internal/compresser"
 	"github.com/pingachguk/ya-shortener/internal/logger"
 	"github.com/pingachguk/ya-shortener/internal/models"
-	"github.com/pingachguk/ya-shortener/internal/storage"
 	"github.com/rs/zerolog/log"
 	"github.com/teris-io/shortid"
 )
@@ -68,7 +67,7 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
 	if err == io.EOF {
-		errorResponse(w, "Bad request data: empty body", http.StatusBadRequest)
+		errorResponse(w, "Bad reuqest data: empty body", http.StatusBadRequest)
 		return
 	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
@@ -83,14 +82,7 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := models.NewShorten(short, req.URL)
-	err = storage.GetStorage().AddShorten(*s)
-	if err != nil {
-		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
-		return
-	}
-
+	urls[short] = req.URL
 	res := models.Response{
 		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
 	}
@@ -98,7 +90,7 @@ func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(res); err != nil {
-		errorResponse(w, "Internal error", http.StatusInternalServerError)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
 	}
