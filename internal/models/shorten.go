@@ -9,7 +9,7 @@ func NewShorten(shortUrl string, originalUrl string) *Shorten {
 	}
 }
 
-func (s Shorten) GetJson() ([]byte, error) {
+func (s Shorten) GetJSON() ([]byte, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
