@@ -65,8 +65,8 @@ func NewFileStorage(filename string) *FileStorage {
 }
 
 func (fs *FileStorage) AddShorten(shorten models.Shorten) error {
-	newId := len(fs.shortens) + 1
-	shorten.Uuid = newId
+	newID := len(fs.shortens) + 1
+	shorten.Uuid = newID
 
 	data, err := shorten.GetJson()
 	if err != nil {
