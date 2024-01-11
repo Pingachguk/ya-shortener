@@ -1,6 +1,8 @@
 package config
 
-import "github.com/pingachguk/ya-shortener/internal/storage"
+import (
+	"github.com/pingachguk/ya-shortener/internal/storage"
+)
 
 type config struct {
 	App             string `env:"APP" envDefault:"localhost:8080"`
@@ -14,7 +16,7 @@ func InitConfig() {
 	if Config == (config{}) {
 		parseFlags(&Config)
 
-		if Config.FileStoragePath != "" {
+		if (Config.FileStoragePath != "") && storage.GetStorage() == nil {
 			storage.NewFileStorage(Config.FileStoragePath)
 		}
 	}

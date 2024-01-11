@@ -83,3 +83,13 @@ func (fs *FileStorage) AddShorten(shorten models.Shorten) error {
 
 	return nil
 }
+
+func (fs *FileStorage) GetByShort(short string) *models.Shorten {
+	for _, v := range fs.shortens {
+		if v.ShortUrl == short {
+			return &v
+		}
+	}
+
+	return nil
+}

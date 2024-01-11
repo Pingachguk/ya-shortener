@@ -16,14 +16,12 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-var urls map[string]string
-
 func tryRedirectHandler(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	url, ok := urls[id]
+	short := chi.URLParam(r, "short")
+	shorten := storage.GetStorage().GetByShort(short)
 
-	if ok {
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	if shorten != nil {
+		http.Redirect(w, r, shorten.OriginalUrl, http.StatusTemporaryRedirect)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -37,7 +35,7 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("")
 		return
 	} else if len(body) == 0 {
-		http.Error(w, "Bad reuqest data: empty body", http.StatusBadRequest)
+		http.Error(w, "Bad request data: empty body", http.StatusBadRequest)
 		return
 	}
 
@@ -48,11 +46,17 @@ func createShortHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("")
 		return
 	}
-	urls[short] = url
-	res := fmt.Sprintf("%s/%s", config.Config.Base, short)
+
+	s := models.NewShorten(short, url)
+	err = storage.GetStorage().AddShorten(*s)
+	if err != nil {
+		errorResponse(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(res))
+	w.Write([]byte(fmt.Sprintf("%s/%s", config.Config.Base, short)))
 }
 
 func apiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
@@ -121,10 +125,6 @@ func errorResponse(w http.ResponseWriter, message string, statusCode int) {
 }
 
 func GetRouter() chi.Router {
-	if urls == nil {
-		urls = make(map[string]string)
-	}
-
 	router := chi.NewRouter()
 
 	router.Use(
@@ -136,7 +136,7 @@ func GetRouter() chi.Router {
 		r.Post("/shorten", apiCreateShortHandler)
 	})
 
-	router.Get("/{id}", tryRedirectHandler)
+	router.Get("/{short}", tryRedirectHandler)
 	router.Post("/", createShortHandler)
 
 	return router

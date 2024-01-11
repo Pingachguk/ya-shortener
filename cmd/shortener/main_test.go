@@ -12,6 +12,8 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/pingachguk/ya-shortener/config"
+	"github.com/pingachguk/ya-shortener/internal/models"
+	"github.com/pingachguk/ya-shortener/internal/storage"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,9 +43,9 @@ func TestGetShortHandler(t *testing.T) {
 			},
 		},
 	}
-	urls = map[string]string{
-		"qwerty": "https://praktikum.yandex.ru",
-	}
+
+	store := storage.NewFileStorage("/tmp/test-data.json")
+	store.AddShorten(*models.NewShorten("qwerty", "https://praktikum.yandex.ru"))
 
 	srv := createTestServer()
 	defer srv.Close()
