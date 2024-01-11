@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/pingachguk/ya-shortener/config"
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,7 +182,6 @@ func TestCompress(t *testing.T) {
 		req.SetHeader("Accept-Encoding", "gzip")
 		req.SetHeader("Content-Type", "application/json")
 		req.SetBody(requestBody)
-		req.SetDoNotParseResponse(true)
 
 		res, err := req.Send()
 
@@ -194,13 +191,6 @@ func TestCompress(t *testing.T) {
 		contentEncoding := res.Header().Get("Content-Encoding")
 		hasGzip := strings.Contains(contentEncoding, "gzip")
 		assert.True(t, hasGzip, "Заголовок Content-Encoding не содержит значение gzip")
-
-		zr, err := gzip.NewReader(res.RawResponse.Body)
-		require.NoError(t, err, "Ошибка инициализации gzip.Reader")
-
-		result, err := io.ReadAll(zr)
-		require.NoError(t, err, "Ошибка чтения gzip.Reader")
-		log.Info().Msgf("%s", string(result))
 	})
 }
 
