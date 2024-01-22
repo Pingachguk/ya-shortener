@@ -57,7 +57,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s/%s", config.Config.Base, short)))
 }
 
-func ApiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
+func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.Request
 
 	w.Header().Set("Content-Type", "application/json")

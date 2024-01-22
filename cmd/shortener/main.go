@@ -20,7 +20,7 @@ func GetRouter() chi.Router {
 	)
 
 	router.Route("/api", func(r chi.Router) {
-		r.Post("/shorten", handlers.ApiCreateShortHandler)
+		r.Post("/shorten", handlers.APICreateShortHandler)
 	})
 
 	router.Get("/{short}", handlers.TryRedirectHandler)
