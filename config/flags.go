@@ -9,6 +9,12 @@ func parseFlags(cfg *config) {
 	flag.StringVar(&cfg.App, "a", "localhost:8080", "App address for server")
 	flag.StringVar(&cfg.Base, "b", "http://localhost:8080", "Base address for short URL")
 	flag.StringVar(&cfg.FileStoragePath, "f", "/tmp/short-url-db.json", "File storage for URLs")
+	flag.StringVar(
+		&cfg.DatabaseDSN,
+		"d",
+		"postgres://postgres:postgres@localhost:5432/shortener",
+		"DSN for connect to database",
+	)
 	flag.Parse()
 
 	if app := os.Getenv("APP"); app != "" {
@@ -19,5 +25,8 @@ func parseFlags(cfg *config) {
 	}
 	if fileStoragePath := os.Getenv("FILE_STORAGE_PATH"); fileStoragePath != "" {
 		cfg.FileStoragePath = fileStoragePath
+	}
+	if databaseDSN := os.Getenv("DATABASE_DSN"); databaseDSN != "" {
+		cfg.DatabaseDSN = databaseDSN
 	}
 }

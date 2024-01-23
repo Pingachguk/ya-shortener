@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -104,6 +105,17 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Msgf("")
 		return
 	}
+}
+
+func PingDatabase(w http.ResponseWriter, r *http.Request) {
+	database := storage.GetDatabase()
+	err := database.Conn.Ping(context.Background())
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func errorResponse(w http.ResponseWriter, message string, statusCode int) {

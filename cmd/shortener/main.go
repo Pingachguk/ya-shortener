@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pingachguk/ya-shortener/internal/storage"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -25,12 +26,14 @@ func GetRouter() chi.Router {
 
 	router.Get("/{short}", handlers.TryRedirectHandler)
 	router.Post("/", handlers.CreateShortHandler)
+	router.Get("/ping", handlers.PingDatabase)
 
 	return router
 }
 
 func main() {
 	config.InitConfig()
+	defer storage.GetDatabase().CloseConnection()
 
 	log.Info().Msgf("[*] Application address: %s", config.Config.Base)
 	log.Info().Msgf("[*] Base address: %s", config.Config.Base)
