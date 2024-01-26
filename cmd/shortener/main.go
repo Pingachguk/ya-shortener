@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/pingachguk/ya-shortener/internal/storage"
 	"net/http"
 
@@ -31,9 +32,16 @@ func GetRouter() chi.Router {
 	return router
 }
 
+func closeStorage() {
+	err := storage.GetStorage().Close(context.Background())
+	if err != nil {
+		log.Err(err).Msgf("")
+	}
+}
+
 func main() {
 	config.InitConfig()
-	defer storage.GetDatabase().CloseConnection()
+	defer closeStorage()
 
 	log.Info().Msgf("[*] Application address: %s", config.Config.Base)
 	log.Info().Msgf("[*] Base address: %s", config.Config.Base)

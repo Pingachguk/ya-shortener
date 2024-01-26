@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,8 +45,10 @@ func TestGetShortHandler(t *testing.T) {
 		},
 	}
 
-	store := storage.NewFileStorage("/tmp/test-data.json")
-	store.AddShorten(*models.NewShorten("qwerty", "https://praktikum.yandex.ru"))
+	storage.InitMemoryStorage()
+	store := storage.GetStorage()
+	err := store.AddShorten(context.Background(), *models.NewShorten("qwerty", "https://praktikum.yandex.ru"))
+	require.NoError(t, err)
 
 	srv := createTestServer()
 	defer srv.Close()

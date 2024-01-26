@@ -17,7 +17,12 @@ import (
 
 func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	short := chi.URLParam(r, "short")
-	shorten := storage.GetStorage().GetByShort(short)
+	shorten, err := storage.GetStorage().GetByShort(context.Background(), short)
+	if err != nil {
+		errorResponse(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
 
 	if shorten != nil {
 		http.Redirect(w, r, shorten.OriginalURL, http.StatusTemporaryRedirect)
@@ -47,7 +52,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := models.NewShorten(short, url)
-	err = storage.GetStorage().AddShorten(*s)
+	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
@@ -87,7 +92,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := models.NewShorten(short, req.URL)
-	err = storage.GetStorage().AddShorten(*s)
+	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
@@ -108,10 +113,11 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PingDatabase(w http.ResponseWriter, r *http.Request) {
-	database := storage.GetDatabase()
+	database := storage.GetDatabaseStorage()
 	err := database.Conn.Ping(context.Background())
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
 		return
 	}
 
