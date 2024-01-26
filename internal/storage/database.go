@@ -41,7 +41,7 @@ func GetDatabaseStorage() *DatabaseStorage {
 func (db *DatabaseStorage) startMigrations(ctx context.Context) error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS shortens (
-			id				serial primary key, 
+			id				bigserial primary key, 
 			original_url	varchar(255) not null, 
 			short_url		varchar(255) not null
     	)`,
@@ -72,11 +72,11 @@ func (db *DatabaseStorage) AddShorten(ctx context.Context, shorten models.Shorte
 }
 
 func (db *DatabaseStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
-	sql := "SELECT id, original_url, short_url FROM shortens WHERE short = $1"
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE short_url = $1"
 	row := db.Conn.QueryRow(ctx, sql, short)
 	shorten := &models.Shorten{}
 
-	err := row.Scan(shorten.UUID, shorten.OriginalURL, shorten.ShortURL)
+	err := row.Scan(&shorten.UUID, &shorten.OriginalURL, &shorten.ShortURL)
 	if err != nil {
 		return nil, err
 	}

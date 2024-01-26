@@ -15,7 +15,7 @@ type (
 	}
 
 	Shorten struct {
-		UUID        int    `json:"uuid"`
+		UUID        int8   `json:"uuid"`
 		ShortURL    string `json:"short_url"`
 		OriginalURL string `json:"original_url"`
 	}

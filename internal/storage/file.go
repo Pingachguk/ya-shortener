@@ -12,7 +12,7 @@ import (
 
 type FileStorage struct {
 	f          *os.File
-	countLines int
+	countLines int8
 }
 
 var fileStorage *FileStorage
@@ -86,15 +86,14 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Sh
 }
 
 func (fs *FileStorage) Close(ctx context.Context) error {
-	// ----
 	return fs.f.Close()
 }
 
-func getCountLines(f *os.File) int {
+func getCountLines(f *os.File) int8 {
 	numberOfLines := 0
 	input := bufio.NewScanner(f)
 	for input.Scan() {
 		numberOfLines++
 	}
-	return numberOfLines
+	return int8(numberOfLines)
 }

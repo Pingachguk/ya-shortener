@@ -25,7 +25,7 @@ func GetMemoryStorage() *MemoryStorage {
 
 func (ms *MemoryStorage) AddShorten(ctx context.Context, shorten models.Shorten) error {
 	newID := len(ms.shortens) + 1
-	shorten.UUID = newID
+	shorten.UUID = int8(newID)
 
 	ms.shortens = append(ms.shortens, shorten)
 
