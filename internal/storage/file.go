@@ -6,39 +6,60 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/pingachguk/ya-shortener/internal/models"
+	"github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
 )
 
 type FileStorage struct {
 	f          *os.File
-	countLines int8
+	countLines int64
 }
 
 var fileStorage *FileStorage
 
-func InitFileStorage(ctx context.Context, filename string) {
+func InitFileStorage(ctx context.Context, path string) {
 	var f *os.File
 
-	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-		err := os.MkdirAll(filepath.Dir(filename), os.ModeAppend)
+	stat, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		dir := filepath.Dir(path)
+		err = os.MkdirAll(dir, os.ModeAppend)
 		if err != nil {
-			panic(err)
+			log.Panic().Err(err).Msgf("")
 		}
 
-		f, err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			panic(err)
+		if dir == path {
+			f, err = os.CreateTemp(path, "data_*.json")
+
+			if err != nil {
+				log.Panic().Err(err).Msgf("")
+			}
+		} else {
+			f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModePerm)
+			if err != nil {
+				log.Panic().Err(err).Msgf("")
+			}
+		}
+	} else if err == nil {
+		switch mode := stat.Mode(); {
+		case mode.IsDir():
+			f, err = os.CreateTemp(path, "data_*.json")
+
+			if err != nil {
+				log.Panic().Err(err).Msgf("")
+			}
+		case mode.IsRegular():
+			f, err = os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
+
+			if err != nil {
+				log.Panic().Err(err).Msgf("")
+			}
 		}
 	} else {
-		f, err = os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
-
-		if err != nil {
-			panic(err)
-		}
+		log.Panic().Err(err).Msgf("")
 	}
 
-	fileStorage.f = f
 	fileStorage = &FileStorage{
 		f:          f,
 		countLines: getCountLines(f),
@@ -68,7 +89,13 @@ func (fs *FileStorage) AddShorten(ctx context.Context, shorten models.Shorten) e
 }
 
 func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
-	scanner := bufio.NewScanner(fs.f)
+	f, err := os.Open(fs.f.Name())
+	if err != nil {
+		log.Panic().Err(err).Msgf("")
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		shorten := models.Shorten{}
 		b := scanner.Bytes()
@@ -89,11 +116,11 @@ func (fs *FileStorage) Close(ctx context.Context) error {
 	return fs.f.Close()
 }
 
-func getCountLines(f *os.File) int8 {
+func getCountLines(f *os.File) int64 {
 	numberOfLines := 0
 	input := bufio.NewScanner(f)
 	for input.Scan() {
 		numberOfLines++
 	}
-	return int8(numberOfLines)
+	return int64(numberOfLines)
 }

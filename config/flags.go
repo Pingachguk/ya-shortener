@@ -8,7 +8,7 @@ import (
 func parseFlags(cfg *config) {
 	flag.StringVar(&cfg.App, "a", "localhost:8080", "App address for server")
 	flag.StringVar(&cfg.Base, "b", "http://localhost:8080", "Base address for short URL")
-	flag.StringVar(&cfg.FileStoragePath, "f", "", "File storage for URLs. Example: /tmp/short-url-db.json")
+	flag.StringVar(&cfg.FileStoragePath, "f", "/tmp/short-url-db.json", "File storage for URLs. Example: /tmp/short-url-db.json")
 	flag.StringVar(
 		&cfg.DatabaseDSN,
 		"d",
