@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pingachguk/ya-shortener/config"
-	"github.com/pingachguk/ya-shortener/internal/compresser"
+	"github.com/pingachguk/ya-shortener/internal/compressor"
 	"github.com/pingachguk/ya-shortener/internal/handlers"
 	"github.com/pingachguk/ya-shortener/internal/logger"
 	"github.com/rs/zerolog/log"
@@ -17,7 +17,7 @@ func GetRouter() chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(
-		compresser.CompressMiddleware,
+		compressor.CompressMiddleware,
 		logger.LogMiddleware,
 	)
 
