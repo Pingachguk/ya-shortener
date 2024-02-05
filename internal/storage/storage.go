@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"github.com/pingachguk/ya-shortener/internal/models"
+	"github.com/pkg/errors"
 )
 
 func GetStorage() Storage {
@@ -23,3 +24,5 @@ type Storage interface {
 	GetByShort(ctx context.Context, short string) (*models.Shorten, error)
 	Close(ctx context.Context) error
 }
+
+var ErrUnique = errors.New("unique conflict")

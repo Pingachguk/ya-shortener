@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -54,6 +55,12 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	s := models.NewShorten(short, url)
 	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
+		if errors.Is(err, storage.ErrUnique) {
+			errorResponse(w, "URL is not unique", http.StatusConflict)
+			log.Error().Err(err).Msgf("")
+			return
+		}
+
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
@@ -94,6 +101,12 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	s := models.NewShorten(short, req.URL)
 	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
+		if errors.Is(err, storage.ErrUnique) {
+			errorResponse(w, "URL is not unique", http.StatusConflict)
+			log.Error().Err(err).Msgf("")
+			return
+		}
+
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return

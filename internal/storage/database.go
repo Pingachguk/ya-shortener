@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pingachguk/ya-shortener/internal/models"
 	"github.com/rs/zerolog/log"
@@ -44,7 +46,7 @@ func (db *DatabaseStorage) startMigrations(ctx context.Context) error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS shortens (
 			id				bigserial primary key, 
-			original_url	varchar(255) not null, 
+			original_url	varchar(255) not null unique, 
 			short_url		varchar(255) not null
     	)`,
 	}
@@ -66,9 +68,18 @@ func (db *DatabaseStorage) Close(ctx context.Context) error {
 }
 
 func (db *DatabaseStorage) AddShorten(ctx context.Context, shorten models.Shorten) error {
-	query := "INSERT INTO shortens (original_url, short_url) VALUES ($1, $2)"
-	_, err := db.Conn.Exec(ctx, query, shorten.OriginalURL, shorten.ShortURL)
+	args := pgx.NamedArgs{
+		"originalURL": shorten.OriginalURL,
+		"shortURL":    shorten.ShortURL,
+	}
+
+	query := "INSERT INTO shortens (original_url, short_url) VALUES (@originalURL, @shortURL)"
+	_, err := db.Conn.Exec(ctx, query, args)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			return ErrUnique
+		}
 		return err
 	}
 
