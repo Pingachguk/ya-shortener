@@ -53,14 +53,20 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := models.NewShorten(short, url)
-	err = storage.GetStorage().AddShorten(context.Background(), *s)
-	if err != nil {
-		if errors.Is(err, storage.ErrUnique) {
-			w.WriteHeader(http.StatusConflict)
+	store := storage.GetStorage()
+	err = store.AddShorten(context.Background(), *s)
+	if errors.Is(err, storage.ErrUnique) {
+		shorten, err := store.GetByURL(context.Background(), url)
+		if err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
 			log.Error().Err(err).Msgf("")
 			return
 		}
 
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL)))
+		return
+	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
@@ -99,14 +105,26 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := models.NewShorten(short, req.URL)
-	err = storage.GetStorage().AddShorten(context.Background(), *s)
-	if err != nil {
-		if errors.Is(err, storage.ErrUnique) {
-			w.WriteHeader(http.StatusConflict)
-			log.Error().Err(err).Msgf("")
+	store := storage.GetStorage()
+	err = store.AddShorten(context.Background(), *s)
+	encoder := json.NewEncoder(w)
+	if errors.Is(err, storage.ErrUnique) {
+		shorten, err := store.GetByURL(context.Background(), req.URL)
+		if err != nil {
 			return
 		}
 
+		w.WriteHeader(http.StatusConflict)
+		res := models.ShortenResponse{
+			Result: fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL),
+		}
+		if err := encoder.Encode(res); err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("")
+			return
+		}
+		return
+	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
@@ -117,7 +135,6 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(res); err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")

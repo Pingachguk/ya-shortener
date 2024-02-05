@@ -136,6 +136,30 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Sh
 	return nil, nil
 }
 
+func (fs *FileStorage) GetByURL(ctx context.Context, URL string) (*models.Shorten, error) {
+	f, err := os.Open(fs.f.Name())
+	if err != nil {
+		log.Panic().Err(err).Msgf("")
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		shorten := models.Shorten{}
+		b := scanner.Bytes()
+		err := json.Unmarshal(b, &shorten)
+		if err != nil {
+			panic(err)
+		}
+
+		if shorten.OriginalURL == URL {
+			return &shorten, nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (fs *FileStorage) Close(ctx context.Context) error {
 	return fs.f.Close()
 }

@@ -54,6 +54,20 @@ func (ms *MemoryStorage) GetByShort(ctx context.Context, short string) (*models.
 	return nil, nil
 }
 
+func (ms *MemoryStorage) GetByURL(ctx context.Context, URL string) (*models.Shorten, error) {
+	if ms.close {
+		return nil, errors.New("storage is closed")
+	}
+
+	for _, v := range ms.shortens {
+		if v.OriginalURL == URL {
+			return &v, nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (ms *MemoryStorage) Close(ctx context.Context) error {
 	ms.close = true
 

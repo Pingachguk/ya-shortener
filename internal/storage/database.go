@@ -123,6 +123,18 @@ func (db *DatabaseStorage) AddBatchShorten(ctx context.Context, shortens []model
 func (db *DatabaseStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
 	sql := "SELECT id, original_url, short_url FROM shortens WHERE short_url = $1"
 	row := db.Conn.QueryRow(ctx, sql, short)
+
+	return db.mapToShorten(row)
+}
+
+func (db *DatabaseStorage) GetByURL(ctx context.Context, URL string) (*models.Shorten, error) {
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE original_url = $1"
+	row := db.Conn.QueryRow(ctx, sql, URL)
+
+	return db.mapToShorten(row)
+}
+
+func (db *DatabaseStorage) mapToShorten(row pgx.Row) (*models.Shorten, error) {
 	shorten := &models.Shorten{}
 
 	err := row.Scan(&shorten.UUID, &shorten.OriginalURL, &shorten.ShortURL)
