@@ -88,6 +88,30 @@ func (fs *FileStorage) AddShorten(ctx context.Context, shorten models.Shorten) e
 	return nil
 }
 
+func (fs *FileStorage) AddBatchShorten(ctx context.Context, shortens []models.Shorten) error {
+	data := make([]byte, 0)
+	for _, shorten := range shortens {
+		newID := fs.countLines + 1
+		fs.countLines = newID
+		shorten.UUID = newID
+
+		row, err := shorten.GetJSON()
+		if err != nil {
+			return err
+		}
+
+		row = append(row, '\n')
+		data = append(data, row...)
+	}
+
+	_, err := fs.f.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
 	f, err := os.Open(fs.f.Name())
 	if err != nil {

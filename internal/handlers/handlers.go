@@ -64,7 +64,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
-	var req models.Request
+	var req models.ShortenRequest
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -99,7 +99,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := models.Response{
+	res := models.ShortenResponse{
 		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
 	}
 
@@ -107,6 +107,54 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(res); err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+}
+
+func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	requestData := make([]models.BatchShortenRequest, 0)
+	requestDecoder := json.NewDecoder(r.Body)
+
+	if err := requestDecoder.Decode(&requestData); err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+
+	responseData := make([]models.BatchShortenResponse, 0)
+	shortens := make([]models.Shorten, 0, len(requestData))
+	for _, v := range requestData {
+		short, err := shortid.GetDefault().Generate()
+		if err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("")
+			return
+		}
+
+		shorten := models.NewShorten(short, v.OriginalURL)
+		shortens = append(shortens, *shorten)
+		responseRow := models.BatchShortenResponse{
+			CorrelationID: v.CorrelationID,
+			ShortURL:      fmt.Sprintf("%s/%s", config.Config.Base, short),
+		}
+		responseData = append(responseData, responseRow)
+	}
+
+	err := storage.GetStorage().AddBatchShorten(context.Background(), shortens)
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("")
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+
+	responseEncoder := json.NewEncoder(w)
+	if err := responseEncoder.Encode(responseData); err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
 		return
 	}

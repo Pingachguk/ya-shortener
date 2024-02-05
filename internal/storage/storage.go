@@ -19,6 +19,7 @@ func GetStorage() Storage {
 
 type Storage interface {
 	AddShorten(ctx context.Context, shorten models.Shorten) error
+	AddBatchShorten(ctx context.Context, shortens []models.Shorten) error
 	GetByShort(ctx context.Context, short string) (*models.Shorten, error)
 	Close(ctx context.Context) error
 }

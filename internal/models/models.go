@@ -1,11 +1,11 @@
 package models
 
 type (
-	Request struct {
+	ShortenRequest struct {
 		URL string `json:"url"`
 	}
 
-	Response struct {
+	ShortenResponse struct {
 		Result string `json:"result"`
 	}
 
@@ -18,5 +18,15 @@ type (
 		UUID        int64  `json:"uuid"`
 		ShortURL    string `json:"short_url"`
 		OriginalURL string `json:"original_url"`
+	}
+
+	BatchShortenRequest struct {
+		CorrelationID string `json:"correlation_id"`
+		OriginalURL   string `json:"original_url"`
+	}
+
+	BatchShortenResponse struct {
+		CorrelationID string `json:"correlation_id"`
+		ShortURL      string `json:"short_url"`
 	}
 )

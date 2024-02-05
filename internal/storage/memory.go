@@ -32,6 +32,14 @@ func (ms *MemoryStorage) AddShorten(ctx context.Context, shorten models.Shorten)
 	return nil
 }
 
+func (ms *MemoryStorage) AddBatchShorten(ctx context.Context, shortens []models.Shorten) error {
+	for _, shorten := range shortens {
+		ms.AddShorten(ctx, shorten)
+	}
+
+	return nil
+}
+
 func (ms *MemoryStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
 	if ms.close {
 		return nil, errors.New("storage is closed")

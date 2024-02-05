@@ -85,7 +85,7 @@ func TestCreateShortHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "#2 Bad Request",
+			name: "#2 Bad ShortenRequest",
 			data: "",
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -105,7 +105,7 @@ func TestCreateShortHandler(t *testing.T) {
 
 			res, err := req.Send()
 
-			require.NoError(t, err, "Error HTTP Request")
+			require.NoError(t, err, "Error HTTP ShortenRequest")
 			assert.Equal(t, test.want.statusCode, res.StatusCode())
 		})
 	}
@@ -128,7 +128,7 @@ func TestApiCreateShortHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "#2 Bad Request",
+			name: "#2 Bad ShortenRequest",
 			data: "",
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -148,7 +148,7 @@ func TestApiCreateShortHandler(t *testing.T) {
 			req.SetBody(test.data)
 
 			res, err := req.Send()
-			require.NoError(t, err, "Error HTTP Request")
+			require.NoError(t, err, "Error HTTP ShortenRequest")
 			assert.Equal(t, test.want.statusCode, res.StatusCode())
 		})
 	}
@@ -178,7 +178,7 @@ func TestCompress(t *testing.T) {
 
 		res, err := req.Send()
 
-		require.NoError(t, err, "Error HTTP Request")
+		require.NoError(t, err, "Error HTTP ShortenRequest")
 		assert.Equal(t, http.StatusCreated, res.StatusCode())
 	})
 
@@ -193,7 +193,7 @@ func TestCompress(t *testing.T) {
 
 		res, err := req.Send()
 
-		require.NoError(t, err, "Error HTTP Request")
+		require.NoError(t, err, "Error HTTP ShortenRequest")
 
 		assert.Equal(t, http.StatusCreated, res.StatusCode(), "Неожиданный кож ответа")
 		contentEncoding := res.Header().Get("Content-Encoding")
