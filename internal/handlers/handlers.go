@@ -56,7 +56,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
 		if errors.Is(err, storage.ErrUnique) {
-			errorResponse(w, "URL is not unique", http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
 			log.Error().Err(err).Msgf("")
 			return
 		}
@@ -102,7 +102,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	err = storage.GetStorage().AddShorten(context.Background(), *s)
 	if err != nil {
 		if errors.Is(err, storage.ErrUnique) {
-			errorResponse(w, "URL is not unique", http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
 			log.Error().Err(err).Msgf("")
 			return
 		}
