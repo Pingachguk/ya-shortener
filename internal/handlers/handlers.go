@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,7 @@ import (
 
 func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	short := chi.URLParam(r, "short")
-	shorten, err := storage.GetStorage().GetByShort(context.Background(), short)
+	shorten, err := storage.GetStorage().GetByShort(r.Context(), short)
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
@@ -54,9 +53,9 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	s := models.NewShorten(short, url)
 	store := storage.GetStorage()
-	err = store.AddShorten(context.Background(), *s)
+	err = store.AddShorten(r.Context(), *s)
 	if errors.Is(err, storage.ErrUnique) {
-		shorten, err := store.GetByURL(context.Background(), url)
+		shorten, err := store.GetByURL(r.Context(), url)
 		if err != nil {
 			errorResponse(w, "Internal error", http.StatusInternalServerError)
 			log.Error().Err(err).Msgf("")
@@ -106,10 +105,10 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	s := models.NewShorten(short, req.URL)
 	store := storage.GetStorage()
-	err = store.AddShorten(context.Background(), *s)
+	err = store.AddShorten(r.Context(), *s)
 	encoder := json.NewEncoder(w)
 	if errors.Is(err, storage.ErrUnique) {
-		shorten, err := store.GetByURL(context.Background(), req.URL)
+		shorten, err := store.GetByURL(r.Context(), req.URL)
 		if err != nil {
 			return
 		}
@@ -154,7 +153,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseData := make([]models.BatchShortenResponse, 0)
+	responseData := make([]models.BatchShortenResponse, 0, len(requestData))
 	shortens := make([]models.Shorten, 0, len(requestData))
 	for _, v := range requestData {
 		short, err := shortid.GetDefault().Generate()
@@ -173,7 +172,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		responseData = append(responseData, responseRow)
 	}
 
-	err := storage.GetStorage().AddBatchShorten(context.Background(), shortens)
+	err := storage.GetStorage().AddBatchShorten(r.Context(), shortens)
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")
@@ -192,7 +191,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 func PingDatabase(w http.ResponseWriter, r *http.Request) {
 	database := storage.GetDatabaseStorage()
-	err := database.Conn.Ping(context.Background())
+	err := database.Conn.Ping(r.Context())
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("")

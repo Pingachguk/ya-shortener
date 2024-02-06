@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -25,7 +24,7 @@ func InitDatabase(ctx context.Context, connString string) {
 
 	conn, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
-		fmt.Println(err)
+		log.Panic().Err(err).Msgf("")
 	}
 
 	database = &DatabaseStorage{
@@ -43,19 +42,17 @@ func GetDatabaseStorage() *DatabaseStorage {
 }
 
 func (db *DatabaseStorage) startMigrations(ctx context.Context) error {
-	queries := []string{
-		`CREATE TABLE IF NOT EXISTS shortens (
-			id				bigserial primary key, 
-			original_url	varchar(255) not null unique, 
-			short_url		varchar(255) not null
-    	)`,
-	}
+	migration := `
+			CREATE TABLE IF NOT EXISTS shortens (
+				id				bigserial primary key, 
+				original_url	varchar(255) not null unique, 
+				short_url		varchar(255) not null
+		    )
+		`
 
-	for _, query := range queries {
-		_, err := db.Conn.Exec(ctx, query)
-		if err != nil {
-			return err
-		}
+	_, err := db.Conn.Exec(ctx, migration)
+	if err != nil {
+		return err
 	}
 
 	return nil
