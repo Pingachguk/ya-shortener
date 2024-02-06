@@ -31,7 +31,7 @@ func InitDatabase(ctx context.Context, connString string) {
 		Conn: conn,
 	}
 
-	err = database.startMigrations(ctx)
+	err = database.startMigration(ctx)
 	if err != nil {
 		log.Panic().Err(err).Msgf("")
 	}
@@ -41,7 +41,7 @@ func GetDatabaseStorage() *DatabaseStorage {
 	return database
 }
 
-func (db *DatabaseStorage) startMigrations(ctx context.Context) error {
+func (db *DatabaseStorage) startMigration(ctx context.Context) error {
 	migration := `
 			CREATE TABLE IF NOT EXISTS shortens (
 				id				bigserial primary key, 
