@@ -36,7 +36,7 @@ func GetRouter() chi.Router {
 func closeStorage() {
 	err := storage.GetStorage().Close(context.Background())
 	if err != nil {
-		log.Err(err).Msgf("")
+		log.Err(err).Msgf("error close storage")
 	}
 }
 

@@ -24,7 +24,7 @@ func InitDatabase(ctx context.Context, connString string) {
 
 	conn, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
-		log.Panic().Err(err).Msgf("")
+		log.Panic().Err(err).Msgf("connection to database refused")
 	}
 
 	database = &DatabaseStorage{
@@ -33,7 +33,7 @@ func InitDatabase(ctx context.Context, connString string) {
 
 	err = database.startMigration(ctx)
 	if err != nil {
-		log.Panic().Err(err).Msgf("")
+		log.Panic().Err(err).Msgf("error start migration")
 	}
 }
 

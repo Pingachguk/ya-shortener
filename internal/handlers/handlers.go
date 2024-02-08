@@ -20,7 +20,7 @@ func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	shorten, err := storage.GetStorage().GetByShort(r.Context(), short)
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("error get by short for redirect")
 		return
 	}
 
@@ -36,7 +36,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("unread body")
 		return
 	} else if len(body) == 0 {
 		http.Error(w, "Bad request data: empty body", http.StatusBadRequest)
@@ -47,7 +47,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad generating short id")
 		return
 	}
 
@@ -58,7 +58,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		shorten, err := store.GetByURL(r.Context(), url)
 		if err != nil {
 			errorResponse(w, "Internal error", http.StatusInternalServerError)
-			log.Error().Err(err).Msgf("")
+			log.Error().Err(err).Msgf("bad get by url")
 			return
 		}
 
@@ -67,7 +67,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("query error")
 		return
 	}
 
@@ -92,14 +92,14 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad decoded request body")
 		return
 	}
 
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad generating short id")
 		return
 	}
 
@@ -119,13 +119,13 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := encoder.Encode(res); err != nil {
 			errorResponse(w, "Internal error", http.StatusInternalServerError)
-			log.Error().Err(err).Msgf("")
+			log.Error().Err(err).Msgf("error encode response")
 			return
 		}
 		return
 	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("query error")
 		return
 	}
 
@@ -136,7 +136,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	if err := encoder.Encode(res); err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad encode response")
 		return
 	}
 }
@@ -149,7 +149,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := requestDecoder.Decode(&requestData); err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad decode request")
 		return
 	}
 
@@ -159,7 +159,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		short, err := shortid.GetDefault().Generate()
 		if err != nil {
 			errorResponse(w, "Internal error", http.StatusInternalServerError)
-			log.Error().Err(err).Msgf("")
+			log.Error().Err(err).Msgf("bad generating short id")
 			return
 		}
 
@@ -175,7 +175,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	err := storage.GetStorage().AddBatchShorten(r.Context(), shortens)
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("batch error")
 		return
 	}
 
@@ -184,7 +184,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	responseEncoder := json.NewEncoder(w)
 	if err := responseEncoder.Encode(responseData); err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad encode reponse")
 		return
 	}
 }
@@ -194,7 +194,7 @@ func PingDatabase(w http.ResponseWriter, r *http.Request) {
 	err := database.Conn.Ping(r.Context())
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad ping database")
 		return
 	}
 
@@ -213,6 +213,6 @@ func errorResponse(w http.ResponseWriter, message string, statusCode int) {
 
 	if err := encoder.Encode(res); err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad encode response")
 	}
 }

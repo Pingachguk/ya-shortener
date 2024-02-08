@@ -26,19 +26,19 @@ func InitFileStorage(ctx context.Context, path string) {
 		dir := filepath.Dir(path)
 		err = os.MkdirAll(dir, os.ModeAppend)
 		if err != nil {
-			log.Panic().Err(err).Msgf("")
+			log.Panic().Err(err).Msgf("error make dir")
 		}
 
 		if dir == path {
 			f, err = os.CreateTemp(path, "data_*.json")
 
 			if err != nil {
-				log.Panic().Err(err).Msgf("")
+				log.Panic().Err(err).Msgf("error create temp")
 			}
 		} else {
 			f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModePerm)
 			if err != nil {
-				log.Panic().Err(err).Msgf("")
+				log.Panic().Err(err).Msgf("error open file")
 			}
 		}
 	} else if err == nil {
@@ -47,17 +47,17 @@ func InitFileStorage(ctx context.Context, path string) {
 			f, err = os.CreateTemp(path, "data_*.json")
 
 			if err != nil {
-				log.Panic().Err(err).Msgf("")
+				log.Panic().Err(err).Msgf("error create temp")
 			}
 		case mode.IsRegular():
 			f, err = os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
 
 			if err != nil {
-				log.Panic().Err(err).Msgf("")
+				log.Panic().Err(err).Msgf("error open file")
 			}
 		}
 	} else {
-		log.Panic().Err(err).Msgf("")
+		log.Panic().Err(err).Msgf("bad get stat by path")
 	}
 
 	fileStorage = &FileStorage{
@@ -115,7 +115,7 @@ func (fs *FileStorage) AddBatchShorten(ctx context.Context, shortens []models.Sh
 func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
 	f, err := os.Open(fs.f.Name())
 	if err != nil {
-		log.Panic().Err(err).Msgf("")
+		log.Panic().Err(err).Msgf("error open file for read")
 	}
 	defer f.Close()
 
@@ -139,7 +139,7 @@ func (fs *FileStorage) GetByShort(ctx context.Context, short string) (*models.Sh
 func (fs *FileStorage) GetByURL(ctx context.Context, URL string) (*models.Shorten, error) {
 	f, err := os.Open(fs.f.Name())
 	if err != nil {
-		log.Panic().Err(err).Msgf("")
+		log.Panic().Err(err).Msgf("error opem file")
 	}
 	defer f.Close()
 

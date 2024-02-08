@@ -79,7 +79,7 @@ func CompressMiddleware(next http.Handler) http.Handler {
 		if needDecompress {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
-				log.Error().Err(err).Msgf("")
+				log.Error().Err(err).Msgf("bad initialize reader")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
