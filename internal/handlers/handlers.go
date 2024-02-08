@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +17,12 @@ import (
 
 func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	short := chi.URLParam(r, "short")
-	shorten := storage.GetStorage().GetByShort(short)
+	shorten, err := storage.GetStorage().GetByShort(r.Context(), short)
+	if err != nil {
+		errorResponse(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("error get by short for redirect")
+		return
+	}
 
 	if shorten != nil {
 		http.Redirect(w, r, shorten.OriginalURL, http.StatusTemporaryRedirect)
@@ -30,7 +36,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("unread body")
 		return
 	} else if len(body) == 0 {
 		http.Error(w, "Bad request data: empty body", http.StatusBadRequest)
@@ -41,15 +47,27 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad generating short id")
 		return
 	}
 
 	s := models.NewShorten(short, url)
-	err = storage.GetStorage().AddShorten(*s)
-	if err != nil {
+	store := storage.GetStorage()
+	err = store.AddShorten(r.Context(), *s)
+	if errors.Is(err, storage.ErrUnique) {
+		shorten, err := store.GetByURL(r.Context(), url)
+		if err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("bad get by url")
+			return
+		}
+
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL)))
+		return
+	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("query error")
 		return
 	}
 
@@ -57,8 +75,8 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s/%s", config.Config.Base, short)))
 }
 
-func ApiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
-	var req models.Request
+func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.ShortenRequest
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -74,36 +92,113 @@ func ApiCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad decoded request body")
 		return
 	}
 
 	short, err := shortid.GetDefault().Generate()
 	if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad generating short id")
 		return
 	}
 
 	s := models.NewShorten(short, req.URL)
-	err = storage.GetStorage().AddShorten(*s)
-	if err != nil {
+	store := storage.GetStorage()
+	err = store.AddShorten(r.Context(), *s)
+	encoder := json.NewEncoder(w)
+	if errors.Is(err, storage.ErrUnique) {
+		shorten, err := store.GetByURL(r.Context(), req.URL)
+		if err != nil {
+			return
+		}
+
+		w.WriteHeader(http.StatusConflict)
+		res := models.ShortenResponse{
+			Result: fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL),
+		}
+		if err := encoder.Encode(res); err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("error encode response")
+			return
+		}
+		return
+	} else if err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("query error")
 		return
 	}
 
-	res := models.Response{
+	res := models.ShortenResponse{
 		Result: fmt.Sprintf("%s/%s", config.Config.Base, short),
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(res); err != nil {
 		errorResponse(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad encode response")
 		return
 	}
+}
+
+func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	requestData := make([]models.BatchShortenRequest, 0)
+	requestDecoder := json.NewDecoder(r.Body)
+
+	if err := requestDecoder.Decode(&requestData); err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("bad decode request")
+		return
+	}
+
+	responseData := make([]models.BatchShortenResponse, 0, len(requestData))
+	shortens := make([]models.Shorten, 0, len(requestData))
+	for _, v := range requestData {
+		short, err := shortid.GetDefault().Generate()
+		if err != nil {
+			errorResponse(w, "Internal error", http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("bad generating short id")
+			return
+		}
+
+		shorten := models.NewShorten(short, v.OriginalURL)
+		shortens = append(shortens, *shorten)
+		responseRow := models.BatchShortenResponse{
+			CorrelationID: v.CorrelationID,
+			ShortURL:      fmt.Sprintf("%s/%s", config.Config.Base, short),
+		}
+		responseData = append(responseData, responseRow)
+	}
+
+	err := storage.GetStorage().AddBatchShorten(r.Context(), shortens)
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("batch error")
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+
+	responseEncoder := json.NewEncoder(w)
+	if err := responseEncoder.Encode(responseData); err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("bad encode reponse")
+		return
+	}
+}
+
+func PingDatabase(w http.ResponseWriter, r *http.Request) {
+	database := storage.GetDatabaseStorage()
+	err := database.Conn.Ping(r.Context())
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("bad ping database")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func errorResponse(w http.ResponseWriter, message string, statusCode int) {
@@ -118,6 +213,6 @@ func errorResponse(w http.ResponseWriter, message string, statusCode int) {
 
 	if err := encoder.Encode(res); err != nil {
 		http.Error(w, "Internal error", http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("")
+		log.Error().Err(err).Msgf("bad encode response")
 	}
 }
