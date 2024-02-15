@@ -33,10 +33,10 @@ func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetCurrentUser(*r)
+	user, err := getUser(w, r)
 	if err != nil {
-		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("didn't get current user")
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
 		return
 	}
 
@@ -59,7 +59,6 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(user)
 	s := models.NewShorten(short, url, user.UUID)
 	store := storage.GetStorage()
 	err = store.AddShorten(r.Context(), *s)
@@ -85,10 +84,10 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetCurrentUser(*r)
+	user, err := getUser(w, r)
 	if err != nil {
-		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("didn't get current user")
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
 		return
 	}
 
@@ -158,10 +157,10 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetCurrentUser(*r)
+	user, err := getUser(w, r)
 	if err != nil {
-		errorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Error().Err(err).Msgf("didn't get current user")
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
 		return
 	}
 
@@ -235,7 +234,7 @@ func GetUserURLS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *user == (models.User{}) {
-		err = auth.Authenticate(w)
+		_, err = auth.Authenticate(w)
 		w.WriteHeader(http.StatusUnauthorized)
 		if err != nil {
 			errorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -244,8 +243,6 @@ func GetUserURLS(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-
-	fmt.Println(user.UUID)
 
 	store := storage.GetStorage()
 	shortens, err := store.GetUserURLS(r.Context(), user.UUID)
@@ -262,7 +259,7 @@ func GetUserURLS(w http.ResponseWriter, r *http.Request) {
 		for _, shorten := range shortens {
 			userURL := &models.UserURL{
 				OriginalURL: shorten.OriginalURL,
-				ShortURL:    shorten.ShortURL,
+				ShortURL:    fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL),
 			}
 			res = append(res, *userURL)
 		}
@@ -275,6 +272,22 @@ func GetUserURLS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func getUser(w http.ResponseWriter, r *http.Request) (*models.User, error) {
+	user, err := auth.GetCurrentUser(*r)
+	if err != nil {
+		return nil, err
+	}
+
+	if *user == (models.User{}) {
+		user, err = auth.Authenticate(w)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
 }
 
 func errorResponse(w http.ResponseWriter, message string, statusCode int) {

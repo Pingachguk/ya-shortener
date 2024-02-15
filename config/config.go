@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/caarlos0/env"
 	"github.com/pingachguk/ya-shortener/internal/storage"
+	"github.com/rs/zerolog/log"
 )
 
 type config struct {
@@ -20,7 +21,7 @@ var Config config
 func InitConfig() {
 	if Config == (config{}) {
 		if err := env.Parse(&Config); err != nil {
-
+			log.Panic().Err(err).Msgf("bad parse env to config")
 		}
 		parseFlags(&Config)
 

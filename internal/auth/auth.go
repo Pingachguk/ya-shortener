@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const CookieName = "auth_token"
+const CookieName = "auth_access"
 
 type TokenData struct {
 	jwt.RegisteredClaims
@@ -25,7 +25,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		}
 
-		err := Authenticate(w)
+		_, err := Authenticate(w)
 		if err != nil {
 			http.Error(w, "Internal error", http.StatusInternalServerError)
 			log.Error().Err(err).Msgf("bad Authenticate")
@@ -75,10 +75,10 @@ func CheckAuth(r *http.Request) bool {
 	return verifyToken(token.Value)
 }
 
-func Authenticate(w http.ResponseWriter) error {
+func Authenticate(w http.ResponseWriter) (*models.User, error) {
 	tokenString, err := generateToken()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cookie := &http.Cookie{
@@ -89,7 +89,14 @@ func Authenticate(w http.ResponseWriter) error {
 	}
 	http.SetCookie(w, cookie)
 
-	return nil
+	tokenData, err := GetTokenData(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.User{
+		UUID: tokenData.UserID,
+	}, nil
 }
 
 func verifyToken(tokenString string) bool {
