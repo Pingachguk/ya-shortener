@@ -23,6 +23,7 @@ type Storage interface {
 	AddBatchShorten(ctx context.Context, shortens []models.Shorten) error
 	GetByShort(ctx context.Context, short string) (*models.Shorten, error)
 	GetByURL(ctx context.Context, URL string) (*models.Shorten, error)
+	GetUserURLS(ctx context.Context, userID string) ([]*models.Shorten, error)
 	Close(ctx context.Context) error
 }
 
