@@ -98,7 +98,7 @@ func (db *DatabaseStorage) AddBatchShorten(ctx context.Context, shortens []model
 		args := pgx.NamedArgs{
 			"originalURL": shorten.OriginalURL,
 			"shortURL":    shorten.ShortURL,
-			"userID":      shorten.UserID,
+			"userID":      sql.NullString{String: shorten.UserID, Valid: shorten.UserID != ""},
 		}
 		batch.Queue(query, args)
 	}
