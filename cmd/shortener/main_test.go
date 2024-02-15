@@ -47,7 +47,10 @@ func TestGetShortHandler(t *testing.T) {
 
 	storage.InitMemoryStorage()
 	store := storage.GetStorage()
-	err := store.AddShorten(context.Background(), *models.NewShorten("qwerty", "https://praktikum.yandex.ru"))
+	err := store.AddShorten(
+		context.Background(),
+		*models.NewShorten("qwerty", "https://praktikum.yandex.ru", "7f42980a-9896-46ff-a04c-6406b251d9a6"),
+	)
 	require.NoError(t, err)
 
 	srv := createTestServer()

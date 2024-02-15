@@ -22,8 +22,14 @@ func GetRouter() chi.Router {
 	)
 
 	router.Route("/api", func(r chi.Router) {
-		r.Post("/shorten", handlers.APICreateShortHandler)
-		r.Post("/shorten/batch", handlers.APIBatchCreateShortHandler)
+		r.Route("/shorten", func(shortenRoute chi.Router) {
+			shortenRoute.Post("/", handlers.APICreateShortHandler)
+			shortenRoute.Post("/batch", handlers.APIBatchCreateShortHandler)
+		})
+
+		r.Route("/user", func(userRoute chi.Router) {
+			userRoute.Get("/urls", handlers.GetUserURLS)
+		})
 	})
 
 	router.Get("/{short}", handlers.TryRedirectHandler)

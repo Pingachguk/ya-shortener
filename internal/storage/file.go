@@ -160,6 +160,10 @@ func (fs *FileStorage) GetByURL(ctx context.Context, URL string) (*models.Shorte
 	return nil, nil
 }
 
+func (fs *FileStorage) GetUserURLS(ctx context.Context, userID string) ([]*models.Shorten, error) {
+	return nil, nil
+}
+
 func (fs *FileStorage) Close(ctx context.Context) error {
 	return fs.f.Close()
 }

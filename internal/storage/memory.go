@@ -68,6 +68,10 @@ func (ms *MemoryStorage) GetByURL(ctx context.Context, URL string) (*models.Shor
 	return nil, nil
 }
 
+func (ms *MemoryStorage) GetUserURLS(ctx context.Context, userID string) ([]*models.Shorten, error) {
+	return nil, nil
+}
+
 func (ms *MemoryStorage) Close(ctx context.Context) error {
 	ms.close = true
 

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
@@ -46,7 +47,8 @@ func (db *DatabaseStorage) startMigration(ctx context.Context) error {
 			CREATE TABLE IF NOT EXISTS shortens (
 				id				bigserial primary key, 
 				original_url	varchar(255) not null unique, 
-				short_url		varchar(255) not null
+				short_url		varchar(255) not null,
+			    user_id			uuid
 		    )
 		`
 
@@ -68,9 +70,10 @@ func (db *DatabaseStorage) AddShorten(ctx context.Context, shorten models.Shorte
 	args := pgx.NamedArgs{
 		"originalURL": shorten.OriginalURL,
 		"shortURL":    shorten.ShortURL,
+		"userID":      sql.NullString{String: shorten.UserID, Valid: shorten.UserID != ""},
 	}
 
-	query := "INSERT INTO shortens (original_url, short_url) VALUES (@originalURL, @shortURL)"
+	query := "INSERT INTO shortens (original_url, short_url, user_id) VALUES (@originalURL, @shortURL, @userID)"
 	_, err := db.Conn.Exec(ctx, query, args)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -90,11 +93,12 @@ func (db *DatabaseStorage) AddBatchShorten(ctx context.Context, shortens []model
 	}
 
 	batch := &pgx.Batch{}
-	query := "INSERT INTO shortens (original_url, short_url) VALUES (@originalURL, @shortURL)"
+	query := "INSERT INTO shortens (original_url, short_url, user_id) VALUES (@originalURL, @shortURL, @userID)"
 	for _, shorten := range shortens {
 		args := pgx.NamedArgs{
 			"originalURL": shorten.OriginalURL,
 			"shortURL":    shorten.ShortURL,
+			"userID":      sql.NullString{String: shorten.UserID, Valid: shorten.UserID != ""},
 		}
 		batch.Queue(query, args)
 	}
@@ -129,6 +133,25 @@ func (db *DatabaseStorage) GetByURL(ctx context.Context, URL string) (*models.Sh
 	row := db.Conn.QueryRow(ctx, sql, URL)
 
 	return db.mapToShorten(row)
+}
+
+func (db *DatabaseStorage) GetUserURLS(ctx context.Context, userID string) ([]*models.Shorten, error) {
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE user_id = $1"
+	rows, err := db.Conn.Query(ctx, sql, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	shortens, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*models.Shorten, error) {
+		return db.mapToShorten(row)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return shortens, nil
 }
 
 func (db *DatabaseStorage) mapToShorten(row pgx.Row) (*models.Shorten, error) {

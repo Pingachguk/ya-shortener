@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pingachguk/ya-shortener/internal/auth"
 	"io"
 	"net/http"
 
@@ -32,6 +33,13 @@ func TryRedirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := getUser(w, r)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
@@ -51,7 +59,7 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := models.NewShorten(short, url)
+	s := models.NewShorten(short, url, user.UUID)
 	store := storage.GetStorage()
 	err = store.AddShorten(r.Context(), *s)
 	if errors.Is(err, storage.ErrUnique) {
@@ -76,6 +84,13 @@ func CreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := getUser(w, r)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
+		return
+	}
+
 	var req models.ShortenRequest
 
 	w.Header().Set("Content-Type", "application/json")
@@ -86,7 +101,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&req)
+	err = decoder.Decode(&req)
 	if err == io.EOF {
 		errorResponse(w, "Bad request data: empty body", http.StatusBadRequest)
 		return
@@ -103,7 +118,7 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := models.NewShorten(short, req.URL)
+	s := models.NewShorten(short, req.URL, user.UUID)
 	store := storage.GetStorage()
 	err = store.AddShorten(r.Context(), *s)
 	encoder := json.NewEncoder(w)
@@ -142,6 +157,13 @@ func APICreateShortHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := getUser(w, r)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user from request")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	requestData := make([]models.BatchShortenRequest, 0)
@@ -163,7 +185,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		shorten := models.NewShorten(short, v.OriginalURL)
+		shorten := models.NewShorten(short, v.OriginalURL, user.UUID)
 		shortens = append(shortens, *shorten)
 		responseRow := models.BatchShortenResponse{
 			CorrelationID: v.CorrelationID,
@@ -172,7 +194,7 @@ func APIBatchCreateShortHandler(w http.ResponseWriter, r *http.Request) {
 		responseData = append(responseData, responseRow)
 	}
 
-	err := storage.GetStorage().AddBatchShorten(r.Context(), shortens)
+	err = storage.GetStorage().AddBatchShorten(r.Context(), shortens)
 	if err != nil {
 		errorResponse(w, err.Error(), http.StatusInternalServerError)
 		log.Error().Err(err).Msgf("batch error")
@@ -199,6 +221,73 @@ func PingDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func GetUserURLS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	user, err := auth.GetCurrentUser(*r)
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get current user")
+		return
+	}
+
+	if *user == (models.User{}) {
+		_, err = auth.Authenticate(w)
+		w.WriteHeader(http.StatusUnauthorized)
+		if err != nil {
+			errorResponse(w, err.Error(), http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("didn't get authenticate")
+		}
+
+		return
+	}
+
+	store := storage.GetStorage()
+	shortens, err := store.GetUserURLS(r.Context(), user.UUID)
+	if err != nil {
+		errorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Error().Err(err).Msgf("didn't get user urls")
+		return
+	}
+
+	if len(shortens) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		res := make([]models.UserURL, 0, len(shortens))
+		for _, shorten := range shortens {
+			userURL := &models.UserURL{
+				OriginalURL: shorten.OriginalURL,
+				ShortURL:    fmt.Sprintf("%s/%s", config.Config.Base, shorten.ShortURL),
+			}
+			res = append(res, *userURL)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		encoder := json.NewEncoder(w)
+		if err := encoder.Encode(res); err != nil {
+			errorResponse(w, err.Error(), http.StatusInternalServerError)
+			log.Error().Err(err).Msgf("bad create response for user urls")
+			return
+		}
+	}
+}
+
+func getUser(w http.ResponseWriter, r *http.Request) (*models.User, error) {
+	user, err := auth.GetCurrentUser(*r)
+	if err != nil {
+		return nil, err
+	}
+
+	if *user == (models.User{}) {
+		user, err = auth.Authenticate(w)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
 }
 
 func errorResponse(w http.ResponseWriter, message string, statusCode int) {

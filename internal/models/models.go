@@ -18,6 +18,7 @@ type (
 		UUID        int64  `json:"uuid"`
 		ShortURL    string `json:"short_url"`
 		OriginalURL string `json:"original_url"`
+		UserID      string `json:"user_id"`
 	}
 
 	BatchShortenRequest struct {
@@ -28,5 +29,14 @@ type (
 	BatchShortenResponse struct {
 		CorrelationID string `json:"correlation_id"`
 		ShortURL      string `json:"short_url"`
+	}
+
+	User struct {
+		UUID string `json:"uuid"`
+	}
+
+	UserURL struct {
+		OriginalURL string `json:"original_url"`
+		ShortURL    string `json:"short_url"`
 	}
 )
