@@ -122,21 +122,21 @@ func (db *DatabaseStorage) AddBatchShorten(ctx context.Context, shortens []model
 }
 
 func (db *DatabaseStorage) GetByShort(ctx context.Context, short string) (*models.Shorten, error) {
-	sql := "SELECT id, original_url, short_url, user_id FROM shortens WHERE short_url = $1"
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE short_url = $1"
 	row := db.Conn.QueryRow(ctx, sql, short)
 
 	return db.mapToShorten(row)
 }
 
 func (db *DatabaseStorage) GetByURL(ctx context.Context, URL string) (*models.Shorten, error) {
-	sql := "SELECT id, original_url, short_url, user_id FROM shortens WHERE original_url = $1"
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE original_url = $1"
 	row := db.Conn.QueryRow(ctx, sql, URL)
 
 	return db.mapToShorten(row)
 }
 
 func (db *DatabaseStorage) GetUserURLS(ctx context.Context, userID string) ([]*models.Shorten, error) {
-	sql := "SELECT id, original_url, short_url, user_id FROM shortens WHERE user_id = $1"
+	sql := "SELECT id, original_url, short_url FROM shortens WHERE user_id = $1"
 	rows, err := db.Conn.Query(ctx, sql, userID)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (db *DatabaseStorage) GetUserURLS(ctx context.Context, userID string) ([]*m
 func (db *DatabaseStorage) mapToShorten(row pgx.Row) (*models.Shorten, error) {
 	shorten := &models.Shorten{}
 
-	err := row.Scan(&shorten.UUID, &shorten.OriginalURL, &shorten.ShortURL, &shorten.UserID)
+	err := row.Scan(&shorten.UUID, &shorten.OriginalURL, &shorten.ShortURL)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

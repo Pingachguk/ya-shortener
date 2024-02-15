@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const COOKIE_NAME = "auth_token"
+const CookieName = "auth_token"
 
 type TokenData struct {
 	jwt.RegisteredClaims
@@ -49,7 +49,7 @@ func GetTokenData(tokenString string) (*TokenData, error) {
 }
 
 func GetCurrentUser(r http.Request) (*models.User, error) {
-	token, err := r.Cookie(COOKIE_NAME)
+	token, err := r.Cookie(CookieName)
 	if errors.Is(err, http.ErrNoCookie) {
 		return &models.User{}, nil
 	} else if err != nil {
@@ -67,7 +67,7 @@ func GetCurrentUser(r http.Request) (*models.User, error) {
 }
 
 func CheckAuth(r *http.Request) bool {
-	token, err := r.Cookie(COOKIE_NAME)
+	token, err := r.Cookie(CookieName)
 	if errors.Is(err, http.ErrNoCookie) {
 		return false
 	}
@@ -82,7 +82,7 @@ func Authenticate(w http.ResponseWriter) error {
 	}
 
 	cookie := &http.Cookie{
-		Name:    COOKIE_NAME,
+		Name:    CookieName,
 		Value:   tokenString,
 		Path:    "/",
 		Expires: time.Now().Add(time.Second * time.Duration(config.Config.JWTExpireSeconds)),
